@@ -1,0 +1,72 @@
+// channel script connects to derby and create trigger. create column if not exist. 
+//connects to mysql
+//do some good stuff.
+
+var dbUri = 'jdbc:derby:/Projects/MirthConnect-223-1/mirthdb'; 
+var dbConn = DatabaseConnectionFactory.createDatabaseConnection ("org.apache.derby.jdbc.ClientDriver", dbUri, '', '');
+
+var mysqldbConn = DatabaseConnectionFactory.createDatabaseConnection('com.mysql.jdbc.Driver','jdbc:mysql://localhost:3306/mirth_work_db','admin','mdcoder7');
+
+
+var result = mysqldbConn.executeUpdate("CREATE TABLE IF NOT EXISTS tbl_mirth_channel_idle_alerts (key INT NOT NULL AUTO_INCREMENT,fld_channel_id VARCHAR(45) NULL,fld_name VARCHAR(45) NULL,fld_last_message_time DATETIME NULL,idle_timeout_min INT NULL,fld_alert_emails VARCHAR(45) NULL,fld_date_created DATETIME NULL,fld_date_modified DATETIME NULL,PRIMARY KEY (key))");
+
+
+mysqldbConn.executeUpdate("DELETE FROM tbl_inbound_patient_packet WHERE fld_feed_id = '" + feedNameId + "';");
+
+
+result = dbConn.executeCachedQuery("select COUNT(*) from sys.SYSCOLUMNS WHERE COLUMNNAME='LASTMESSAGETIME'");
+var count = 0;
+if (result.next()) {
+count = result.getString(1);
+}
+logger.info(count);
+if(count == 0){
+dbConn.executeUpdate("ALTER TABLE APP.CHANNEL ADD LASTMESSAGETIME TIMESTAMP");
+logger.info('Added Column APP.CHANNEL.LASTMESSAGETIME');
+}else{
+	logger.info("APP.CHANNEL.LASTMESSAGETIME exists!");
+}
+
+result = dbConn.executeCachedQuery("select COUNT(*) from sys.SYSTRIGGERS WHERE TRIGGERNAME='UPDATECHANNELTIME'");
+if (result.next()) {
+count = result.getString(1);
+}
+logger.info(count);
+
+
+if(count == 0){
+dbConn.executeUpdate("CREATE TRIGGER UPDATECHANNELTIME AFTER INSERT ON MESSAGE REFERENCING NEW AS NEWROW FOR EACH ROW MODE DB2SQL UPDATE CHANNEL SET LASTMESSAGETIME = NEWROW.DATE_CREATED WHERE ID = NEWROW.CHANNEL_ID");
+logger.info('Added TRIGGER UPDATECHANNELTIME');
+}else{
+	logger.info("TRIGGER UPDATECHANNELTIME exists!");
+}
+
+result = dbConn.executeCachedQuery("SELECT COUNT(*) FROM APP.MESSAGE");
+if (result.next()) {
+count = result.getString(1);
+}
+logger.info("Message count: "+count);
+
+
+
+result = dbConn.executeCachedQuery("SELECT LASTMESSAGETIME, NAME , ID FROM APP.CHANNEL WHERE LASTMESSAGETIME IS NOT NULL");
+if (result.next()) {
+var lastmessage = result.getString(1);
+var name = result.getString(2);
+var id = result.getString(3);
+ logger.info("CHANNEL row: "+id+"  "+ name+" "+lastmessage);
+
+//mysqldbConn.executeUpdate("DELETE FROM tbl_inbound_patient_packet WHERE fld_feed_id = '" + feedNameId + "';");
+
+}
+
+
+
+
+
+
+
+
+
+logger.info('done');
+return count;
