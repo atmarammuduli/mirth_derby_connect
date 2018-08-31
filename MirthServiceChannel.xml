@@ -1,0 +1,302 @@
+<channel>
+  <id>5806ce4c-ffde-4fc0-9021-9143d053fc21</id>
+  <name>MirthServiceChannel</name>
+  <description></description>
+  <enabled>true</enabled>
+  <version>2.2.3.6825</version>
+  <lastModified>
+    <time>1535738459801</time>
+    <timezone>America/Chicago</timezone>
+  </lastModified>
+  <revision>73</revision>
+  <sourceConnector>
+    <name>sourceConnector</name>
+    <properties>
+      <property name="DataType">JavaScript Reader</property>
+      <property name="host">sink</property>
+      <property name="pollingFrequency">5000</property>
+      <property name="pollingType">interval</property>
+      <property name="script">
+
+var dbUri = &apos;jdbc:derby:/Projects/MirthConnect-223-1/mirthdb&apos;; 
+var dbConn = DatabaseConnectionFactory.createDatabaseConnection (&quot;org.apache.derby.jdbc.ClientDriver&quot;, dbUri, &apos;&apos;, &apos;&apos;);
+
+var mysqldbConn = DatabaseConnectionFactory.createDatabaseConnection(&apos;com.mysql.jdbc.Driver&apos;,&apos;jdbc:mysql://localhost:3306/mirth_work_db&apos;,&apos;admin&apos;,&apos;mdcoder7&apos;);
+
+
+var result = mysqldbConn.executeUpdate(&quot;CREATE TABLE IF NOT EXISTS tbl_mirth_channel_idle_alerts (key INT NOT NULL AUTO_INCREMENT,fld_channel_id VARCHAR(45) NULL,fld_name VARCHAR(45) NULL,fld_last_message_time DATETIME NULL,idle_timeout_min INT NULL,fld_alert_emails VARCHAR(45) NULL,fld_date_created DATETIME NULL,fld_date_modified DATETIME NULL,PRIMARY KEY (key))&quot;);
+
+
+mysqldbConn.executeUpdate(&quot;DELETE FROM tbl_inbound_patient_packet WHERE fld_feed_id = &apos;&quot; + feedNameId + &quot;&apos;;&quot;);
+
+
+result = dbConn.executeCachedQuery(&quot;select COUNT(*) from sys.SYSCOLUMNS WHERE COLUMNNAME=&apos;LASTMESSAGETIME&apos;&quot;);
+var count = 0;
+if (result.next()) {
+count = result.getString(1);
+}
+logger.info(count);
+if(count == 0){
+dbConn.executeUpdate(&quot;ALTER TABLE APP.CHANNEL ADD LASTMESSAGETIME TIMESTAMP&quot;);
+logger.info(&apos;Added Column APP.CHANNEL.LASTMESSAGETIME&apos;);
+}else{
+	logger.info(&quot;APP.CHANNEL.LASTMESSAGETIME exists!&quot;);
+}
+
+result = dbConn.executeCachedQuery(&quot;select COUNT(*) from sys.SYSTRIGGERS WHERE TRIGGERNAME=&apos;UPDATECHANNELTIME&apos;&quot;);
+if (result.next()) {
+count = result.getString(1);
+}
+logger.info(count);
+
+
+if(count == 0){
+dbConn.executeUpdate(&quot;CREATE TRIGGER UPDATECHANNELTIME AFTER INSERT ON MESSAGE REFERENCING NEW AS NEWROW FOR EACH ROW MODE DB2SQL UPDATE CHANNEL SET LASTMESSAGETIME = NEWROW.DATE_CREATED WHERE ID = NEWROW.CHANNEL_ID&quot;);
+logger.info(&apos;Added TRIGGER UPDATECHANNELTIME&apos;);
+}else{
+	logger.info(&quot;TRIGGER UPDATECHANNELTIME exists!&quot;);
+}
+
+result = dbConn.executeCachedQuery(&quot;SELECT COUNT(*) FROM APP.MESSAGE&quot;);
+if (result.next()) {
+count = result.getString(1);
+}
+logger.info(&quot;Message count: &quot;+count);
+
+
+
+result = dbConn.executeCachedQuery(&quot;SELECT LASTMESSAGETIME, NAME , ID FROM APP.CHANNEL WHERE LASTMESSAGETIME IS NOT NULL&quot;);
+if (result.next()) {
+var lastmessage = result.getString(1);
+var name = result.getString(2);
+var id = result.getString(3);
+ logger.info(&quot;CHANNEL row: &quot;+id+&quot;  &quot;+ name+&quot; &quot;+lastmessage);
+
+//mysqldbConn.executeUpdate(&quot;DELETE FROM tbl_inbound_patient_packet WHERE fld_feed_id = &apos;&quot; + feedNameId + &quot;&apos;;&quot;);
+
+}
+
+
+
+
+
+
+
+
+
+logger.info(&apos;done&apos;);
+return count;</property>
+    </properties>
+    <transformer>
+      <steps>
+        <step>
+          <sequenceNumber>0</sequenceNumber>
+          <name>New Step</name>
+          <script>logger.info(&apos;test&apos;);</script>
+          <type>JavaScript</type>
+          <data class="map">
+            <entry>
+              <string>Script</string>
+              <string>logger.info(&apos;test&apos;);</string>
+            </entry>
+          </data>
+        </step>
+      </steps>
+      <inboundTemplate encoding="base64"></inboundTemplate>
+      <outboundTemplate encoding="base64"></outboundTemplate>
+      <inboundProtocol>DELIMITED</inboundProtocol>
+      <outboundProtocol>DELIMITED</outboundProtocol>
+      <inboundProperties>
+        <property name="batchGroupingColumn"></property>
+        <property name="batchMessageDelimiter"></property>
+        <property name="batchMessageDelimiterIncluded">false</property>
+        <property name="batchScript"></property>
+        <property name="batchSkipRecords">0</property>
+        <property name="batchSplitByRecord">true</property>
+        <property name="columnDelimiter">,</property>
+        <property name="columnNames"></property>
+        <property name="columnWidths"></property>
+        <property name="escapeWithDoubleQuote">true</property>
+        <property name="ignoreCR">true</property>
+        <property name="numberedRows">false</property>
+        <property name="quoteChar">&quot;</property>
+        <property name="quoteEscapeChar">\</property>
+        <property name="recordDelimiter">
+</property>
+      </inboundProperties>
+      <outboundProperties>
+        <property name="batchGroupingColumn"></property>
+        <property name="batchMessageDelimiter"></property>
+        <property name="batchMessageDelimiterIncluded">false</property>
+        <property name="batchScript"></property>
+        <property name="batchSkipRecords">0</property>
+        <property name="batchSplitByRecord">true</property>
+        <property name="columnDelimiter">,</property>
+        <property name="columnNames"></property>
+        <property name="columnWidths"></property>
+        <property name="escapeWithDoubleQuote">true</property>
+        <property name="ignoreCR">true</property>
+        <property name="numberedRows">false</property>
+        <property name="quoteChar">&quot;</property>
+        <property name="quoteEscapeChar">\</property>
+        <property name="recordDelimiter">
+</property>
+      </outboundProperties>
+    </transformer>
+    <filter>
+      <rules/>
+    </filter>
+    <transportName>JavaScript Reader</transportName>
+    <mode>SOURCE</mode>
+    <enabled>true</enabled>
+    <version>2.2.3.6825</version>
+  </sourceConnector>
+  <destinationConnectors>
+    <connector>
+      <name>Email</name>
+      <properties>
+        <property name="DataType">SMTP Sender</property>
+        <property name="attachments">&lt;list/&gt;</property>
+        <property name="authentication">1</property>
+        <property name="body">Test body</property>
+        <property name="charsetEncoding">DEFAULT_ENCODING</property>
+        <property name="encryption">SSL</property>
+        <property name="from">art9786@gmail.com</property>
+        <property name="headers">&lt;linked-hash-map/&gt;</property>
+        <property name="html">0</property>
+        <property name="password">sdfsfsfs</property>
+        <property name="smtpHost">smtp.gmail.com</property>
+        <property name="smtpPort">465</property>
+        <property name="subject">test</property>
+        <property name="timeout">5000</property>
+        <property name="to">atmaram13@gmail.com</property>
+        <property name="username">sdfsf</property>
+      </properties>
+      <transformer>
+        <steps/>
+        <inboundProtocol>DELIMITED</inboundProtocol>
+        <outboundProtocol>DELIMITED</outboundProtocol>
+        <inboundProperties>
+          <property name="batchGroupingColumn"></property>
+          <property name="batchMessageDelimiter"></property>
+          <property name="batchMessageDelimiterIncluded">false</property>
+          <property name="batchScript"></property>
+          <property name="batchSkipRecords">0</property>
+          <property name="batchSplitByRecord">true</property>
+          <property name="columnDelimiter">,</property>
+          <property name="columnNames"></property>
+          <property name="columnWidths"></property>
+          <property name="escapeWithDoubleQuote">true</property>
+          <property name="ignoreCR">true</property>
+          <property name="numberedRows">false</property>
+          <property name="quoteChar">&quot;</property>
+          <property name="quoteEscapeChar">\</property>
+          <property name="recordDelimiter">
+</property>
+        </inboundProperties>
+        <outboundProperties>
+          <property name="batchGroupingColumn"></property>
+          <property name="batchMessageDelimiter"></property>
+          <property name="batchMessageDelimiterIncluded">false</property>
+          <property name="batchScript"></property>
+          <property name="batchSkipRecords">0</property>
+          <property name="batchSplitByRecord">true</property>
+          <property name="columnDelimiter">,</property>
+          <property name="columnNames"></property>
+          <property name="columnWidths"></property>
+          <property name="escapeWithDoubleQuote">true</property>
+          <property name="ignoreCR">true</property>
+          <property name="numberedRows">false</property>
+          <property name="quoteChar">&quot;</property>
+          <property name="quoteEscapeChar">\</property>
+          <property name="recordDelimiter">
+</property>
+        </outboundProperties>
+      </transformer>
+      <filter>
+        <rules/>
+      </filter>
+      <transportName>SMTP Sender</transportName>
+      <mode>DESTINATION</mode>
+      <enabled>false</enabled>
+      <version>2.2.3.6825</version>
+    </connector>
+    <connector>
+      <name>temp</name>
+      <properties>
+        <property name="DataType">JavaScript Writer</property>
+        <property name="host">sink</property>
+        <property name="script">logger.info(&apos;reached end&apos;);</property>
+      </properties>
+      <transformer>
+        <steps/>
+        <inboundProtocol>DELIMITED</inboundProtocol>
+        <outboundProtocol>DELIMITED</outboundProtocol>
+        <inboundProperties>
+          <property name="batchGroupingColumn"></property>
+          <property name="batchMessageDelimiter"></property>
+          <property name="batchMessageDelimiterIncluded">false</property>
+          <property name="batchScript"></property>
+          <property name="batchSkipRecords">0</property>
+          <property name="batchSplitByRecord">true</property>
+          <property name="columnDelimiter">,</property>
+          <property name="columnNames"></property>
+          <property name="columnWidths"></property>
+          <property name="escapeWithDoubleQuote">true</property>
+          <property name="ignoreCR">true</property>
+          <property name="numberedRows">false</property>
+          <property name="quoteChar">&quot;</property>
+          <property name="quoteEscapeChar">\</property>
+          <property name="recordDelimiter">
+</property>
+        </inboundProperties>
+        <outboundProperties>
+          <property name="batchGroupingColumn"></property>
+          <property name="batchMessageDelimiter"></property>
+          <property name="batchMessageDelimiterIncluded">false</property>
+          <property name="batchScript"></property>
+          <property name="batchSkipRecords">0</property>
+          <property name="batchSplitByRecord">true</property>
+          <property name="columnDelimiter">,</property>
+          <property name="columnNames"></property>
+          <property name="columnWidths"></property>
+          <property name="escapeWithDoubleQuote">true</property>
+          <property name="ignoreCR">true</property>
+          <property name="numberedRows">false</property>
+          <property name="quoteChar">&quot;</property>
+          <property name="quoteEscapeChar">\</property>
+          <property name="recordDelimiter">
+</property>
+        </outboundProperties>
+      </transformer>
+      <filter>
+        <rules/>
+      </filter>
+      <transportName>JavaScript Writer</transportName>
+      <mode>DESTINATION</mode>
+      <enabled>true</enabled>
+      <version>2.2.3.6825</version>
+    </connector>
+  </destinationConnectors>
+  <properties>
+    <property name="clearGlobalChannelMap">true</property>
+    <property name="dont_store_filtered">false</property>
+    <property name="encryptData">false</property>
+    <property name="error_messages_only">false</property>
+    <property name="initialState">started</property>
+    <property name="max_message_age">1</property>
+    <property name="store_messages">true</property>
+    <property name="synchronous">true</property>
+    <property name="transactional">false</property>
+  </properties>
+  <preprocessingScript>// Modify the message variable below to pre process data
+return message;</preprocessingScript>
+  <postprocessingScript>// This script executes once after a message has been processed
+return;</postprocessingScript>
+  <deployScript>// This script executes once when the channel is deployed
+// You only have access to the globalMap and globalChannelMap here to persist data
+return;</deployScript>
+  <shutdownScript>// This script executes once when the channel is undeployed
+// You only have access to the globalMap and globalChannelMap here to persist data
+return;</shutdownScript>
+</channel>
